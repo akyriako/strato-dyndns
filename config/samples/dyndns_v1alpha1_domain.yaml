@@ -1,0 +1,10 @@
+apiVersion: dyndns.contrib.strato.com/v1alpha1
+kind: Domain
+metadata:
+  name: www-example-de
+spec:
+  fqdn: "www.example.de"
+  enabled: true
+  interval: 5
+  password:
+    name: strato-dyndns-password

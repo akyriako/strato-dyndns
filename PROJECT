@@ -1,0 +1,16 @@
+domain: contrib.strato.com
+layout:
+- go.kubebuilder.io/v3
+projectName: strato-dyndns
+repo: contrib.strato.com/strato-dyndns
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: contrib.strato.com
+  group: dyndns
+  kind: Domain
+  path: contrib.strato.com/strato-dyndns/api/v1alpha1
+  version: v1alpha1
+version: "3"

@@ -1,0 +1,48 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - dyndns.contrib.strato.com
+  resources:
+  - domains
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - dyndns.contrib.strato.com
+  resources:
+  - domains/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - dyndns.contrib.strato.com
+  resources:
+  - domains/status
+  verbs:
+  - get
+  - patch
+  - update
