@@ -4,7 +4,7 @@ Strato DynDNS Controller updates your domains' DNS records on STRATO AG using Ku
 ![k9s domains list](assets/SCR-20221124-gda.png)
 
 ## Disclaimer
-THIS SOFTWARE IS NO WAY ASSOCIATED OR AFFILIATED WITH [STRATO AG](https://www.strato.de)
+THIS SOFTWARE IS IN NO WAY ASSOCIATED OR AFFILIATED WITH [STRATO AG](https://www.strato.de)
 
 ## Description
 A custom Controller is observing Domain CRs and syncing their desired state with STRATO DNS servers. You can either define explicitely an IPv4 address (Manual mode) or let the Controller discover you public IPv4 assigned to you by your ISP (Dynamic mode) 
