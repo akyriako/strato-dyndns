@@ -1,6 +1,8 @@
 # Strato DynDNS Controller for Kubernetes
 Strato DynDNS updates your domains' DNS records on STRATO AG using a Kubernetes custom Controller
 
+![k9s domains list](assets/SCR-20221124-gda.png)
+
 ## Disclaimer
 THIS SOFTWARE IS NO WAY ASSOCIATED OR AFFILIATED WITH [STRATO AG](https://www.strato.de)
 
