@@ -86,12 +86,21 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	domainCopy := *domain.DeepCopy()
 	instance := domain.DeepCopyObject()
 	wasSuccess := r.wasLastLastReconciliationSuccessful(&domain)
 	logger = logger.WithValues("fqdn", domain.Spec.Fqdn)
 
-	// break reconciliation loop if is not enabled
+	// update status and break reconciliation loop if is not enabled
 	if !domain.Spec.Enabled {
+		// update the status of the CR
+		if err := r.Status().Update(ctx, &domainCopy); err != nil {
+			logger.Error(err, "updating status failed") //
+
+			requeueAfterUpdateStatusFailure := time.Now().Add(time.Second * time.Duration(15))
+			return ctrl.Result{RequeueAfter: time.Until(requeueAfterUpdateStatusFailure)}, err
+		}
+
 		return ctrl.Result{}, nil
 	}
 
@@ -118,7 +127,6 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
-	domainCopy := *domain.DeepCopy()
 	currentIpAddress := domain.Status.IpAddress
 	var newIpAddress *string
 
@@ -197,7 +205,7 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{RequeueAfter: time.Until(requeueAfterUpdateStatusFailure)}, err
 	}
 
-	// if Mode is Manual and we updated DynDNS with success, then we don't requeue and we will rely only on
+	// if Mode is Manual, and we updated DynDNS with success, then we don't requeue, and we will rely only on
 	// events that will be triggered externally from YAML updates of the CR
 	if mode == Manual && success {
 		return ctrl.Result{}, nil
