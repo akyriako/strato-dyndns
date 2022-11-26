@@ -1,11 +1,11 @@
 # Strato DynDNS Controller for Kubernetes
-// TODO(user): Add simple overview of use/purpose
+Strato DynDNS updates your domains' DNS records on STRATO AG using a Kubernetes custom Controller
 
 ## Disclaimer
 THIS SOFTWARE IS NO WAY ASSOCIATED OR AFFILIATED WITH [STRATO AG](https://www.strato.de)
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+A custom Controller is observing Domain CRs and syncing their desired state with STRATO DNS servers. You can either define explicitely an IPv4 address (Manual mode) or let the Controller discover you public IPv4 assigned to you by your ISP (Dynamic mode) 
 
 ## Getting Started
 You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) or [K3D](https://k3d.io/v5.4.6/) to get a local cluster for testing, or run against a remote cluster.
@@ -14,7 +14,15 @@ You’ll need a Kubernetes cluster to run against. You can use [KIND](https://si
 ### Running on the cluster
 1. Install Instances of Custom Resources:
 
-Create a Secret containing the DynDNS password for your Domain:
+Encode your STRATO DynDNS password for your domain or your STRATO DynDNS master password:
+
+```sh
+
+echo -n "password" | base64
+
+```
+
+Create a Secret containing the base64 encoded password for your Domain:
 
 ```
 apiVersion: v1
@@ -25,6 +33,23 @@ type: Opaque
 data:
   password: cGFzc3dvcmQ=
 ```
+
+Create a Domain pointing to the FQDN of your domain registered with STRATO and bind it with the Secret containing the password for this DynDNS account:
+
+```
+apiVersion: dyndns.contrib.strato.com/v1alpha1
+kind: Domain
+metadata:
+  name: www-example-de
+spec:
+  fqdn: "www.example.de"
+  enabled: true
+  interval: 5
+  password:
+    name: strato-dyndns-password
+```
+
+Deploy these resources to your Kubernetes cluster:
 
 ```sh
 kubectl apply -f config/samples/
