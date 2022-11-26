@@ -1,15 +1,55 @@
-# strato-dyndns
-// TODO(user): Add simple overview of use/purpose
+# Strato DynDNS Controller for Kubernetes
+Strato DynDNS updates your domains' DNS records on STRATO AG using a Kubernetes custom Controller
+
+## Disclaimer
+THIS SOFTWARE IS NO WAY ASSOCIATED OR AFFILIATED WITH [STRATO AG](https://www.strato.de)
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+A custom Controller is observing Domain CRs and syncing their desired state with STRATO DNS servers. You can either define explicitely an IPv4 address (Manual mode) or let the Controller discover you public IPv4 assigned to you by your ISP (Dynamic mode) 
 
 ## Getting Started
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
+You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) or [K3D](https://k3d.io/v5.4.6/) to get a local cluster for testing, or run against a remote cluster.
 **Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
 
 ### Running on the cluster
 1. Install Instances of Custom Resources:
+
+Encode your STRATO DynDNS password for your domain or your STRATO DynDNS master password:
+
+```sh
+
+echo -n "password" | base64
+
+```
+
+Create a Secret containing the base64 encoded password for your Domain:
+
+```
+apiVersion: v1
+kind: Secret
+metadata:
+  name: strato-dyndns-password
+type: Opaque
+data:
+  password: cGFzc3dvcmQ=
+```
+
+Create a Domain pointing to the FQDN of your domain registered with STRATO and bind it with the Secret containing the password for this DynDNS account:
+
+```
+apiVersion: dyndns.contrib.strato.com/v1alpha1
+kind: Domain
+metadata:
+  name: www-example-de
+spec:
+  fqdn: "www.example.de"
+  enabled: true
+  interval: 5
+  password:
+    name: strato-dyndns-password
+```
+
+Deploy these resources to your Kubernetes cluster:
 
 ```sh
 kubectl apply -f config/samples/
@@ -75,20 +115,4 @@ make manifests
 **NOTE:** Run `make --help` for more information on all potential `make` targets
 
 More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-## License
-
-Copyright 2022.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
 
