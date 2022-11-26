@@ -1,8 +1,10 @@
 # Strato DynDNS Controller for Kubernetes
-Strato DynDNS updates your domains' DNS records on STRATO AG using a Kubernetes custom Controller
+Strato DynDNS Controller updates your domains' DNS records on STRATO AG using Kubernetes Custom Resources and Controller
+
+![k9s domains list](assets/SCR-20221124-gda.png)
 
 ## Disclaimer
-THIS SOFTWARE IS NO WAY ASSOCIATED OR AFFILIATED WITH [STRATO AG](https://www.strato.de)
+THIS SOFTWARE IS IN NO WAY ASSOCIATED OR AFFILIATED WITH [STRATO AG](https://www.strato.de)
 
 ## Description
 A custom Controller is observing Domain CRs and syncing their desired state with STRATO DNS servers. You can either define explicitely an IPv4 address (Manual mode) or let the Controller discover you public IPv4 assigned to you by your ISP (Dynamic mode) 
@@ -82,7 +84,7 @@ make undeploy
 ```
 
 ## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
+Please refer to our [Contributing Guidelines](CONTRIBUTING.md)
 
 ### How it works
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
