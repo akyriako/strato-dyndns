@@ -93,6 +93,7 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// update status and break reconciliation loop if is not enabled
 	if !domain.Spec.Enabled {
+		domainCopy.Status.Enabled = domain.Spec.Enabled
 		// update the status of the CR
 		if err := r.Status().Update(ctx, &domainCopy); err != nil {
 			logger.Error(err, "updating status failed") //
