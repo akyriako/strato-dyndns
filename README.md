@@ -14,7 +14,36 @@ You’ll need a Kubernetes cluster to run against. You can use [KIND](https://si
 **Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
 
 ### Running on the cluster
-1. Install Instances of Custom Resources:
+
+1. Build and push your image to the location specified by `IMG` in `Makefile`:
+
+```shell
+# Image URL to use all building/pushing image targets
+IMG_TAG ?= $(shell git rev-parse --short HEAD)
+IMG_NAME ?= strato-dyndns
+DOCKER_HUB_NAME ?= $(shell docker info | sed '/Username:/!d;s/.* //')
+IMG ?= $(DOCKER_HUB_NAME)/$(IMG_NAME):$(IMG_TAG)
+```
+	
+```sh
+make docker-build docker-push
+```
+	
+2. Deploy the controller to the cluster with the image using `IMG`:
+
+```sh
+make deploy
+```
+
+or 
+
+3. Deploy the controller to the cluster with the image using Helm chart:
+
+```sh
+helm install strato-dyndns config/helm/
+```
+
+4. Install Instances of Custom Resources:
 
 Encode your STRATO DynDNS password for your domain or your STRATO DynDNS master password:
 
@@ -57,18 +86,6 @@ Deploy these resources to your Kubernetes cluster:
 kubectl apply -f config/samples/
 ```
 
-2. Build and push your image to the location specified by `IMG`:
-	
-```sh
-make docker-build docker-push IMG=<some-registry>/strato-dyndns:tag
-```
-	
-3. Deploy the controller to the cluster with the image specified by `IMG`:
-
-```sh
-make deploy IMG=<some-registry>/strato-dyndns:tag
-```
-
 ### Uninstall CRDs
 To delete the CRDs from the cluster:
 
@@ -81,6 +98,12 @@ UnDeploy the controller to the cluster:
 
 ```sh
 make undeploy
+```
+
+or if you have installed via Helm:
+
+```shell
+helm uninstall strato-dyndns
 ```
 
 ## Contributing

@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the dyndns v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=dyndns.contrib.strato.com
+// +kubebuilder:object:generate=true
+// +groupName=dyndns.contrib.strato.com
 package v1alpha1
 
 import (
