@@ -32,7 +32,7 @@ controllerManager:
         - ALL
     image:
       repository: akyriako78/strato-dyndns
-      tag: bd1e64d
+      tag: c83db9c
     resources:
       limits:
         cpu: 500m
