@@ -75,8 +75,8 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	logger.V(10).Info("starting dyndns update")
 
-	var domain dyndnsv1alpha1.Domain
-	if err := r.Get(ctx, req.NamespacedName, &domain); err != nil {
+	var original dyndnsv1alpha1.Domain
+	if err := r.Get(ctx, req.NamespacedName, &original); err != nil {
 		if apierrors.IsNotFound(err) {
 			logger.Error(err, "finding Domain failed")
 			return ctrl.Result{}, nil
@@ -86,18 +86,16 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	domainCopy := *domain.DeepCopy()
-	instance := domain.DeepCopyObject()
-	wasSuccess := r.wasLastLastReconciliationSuccessful(&domain)
-	logger = logger.WithValues("fqdn", domain.Spec.Fqdn)
+	desired := *original.DeepCopy()
+	wasSuccess := r.wasLastLastReconciliationSuccessful(&original)
+	logger = logger.WithValues("fqdn", original.Spec.Fqdn)
 
 	// update status and break reconciliation loop if is not enabled
-	if !domain.Spec.Enabled {
-		domainCopy.Status.Enabled = domain.Spec.Enabled
+	if !original.Spec.Enabled {
+		desired.Status.Enabled = original.Spec.Enabled
 		// update the status of the CR
-		if err := r.Status().Update(ctx, &domainCopy); err != nil {
+		if err := r.Status().Update(ctx, &desired); err != nil {
 			logger.Error(err, "updating status failed") //
-
 			requeueAfterUpdateStatusFailure := time.Now().Add(time.Second * time.Duration(15))
 			return ctrl.Result{RequeueAfter: time.Until(requeueAfterUpdateStatusFailure)}, err
 		}
@@ -107,19 +105,19 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// define interval between reconciliation loops
 	interval := defaultIntervalInMinutes
-	if domain.Spec.IntervalInMinutes != nil {
-		interval = *domain.Spec.IntervalInMinutes
+	if original.Spec.IntervalInMinutes != nil {
+		interval = *original.Spec.IntervalInMinutes
 	}
 
 	// change mode to manual in presence of an explicit ip address in specs
-	if domain.Spec.IpAddress != nil {
+	if original.Spec.IpAddress != nil {
 		mode = Manual
 	}
 
 	// is reconciliation loop started too soon because of an external event?
-	if domain.Status.LastReconciliationLoop != nil && mode == Dynamic { //domain.Spec.IpAddress == nil {
-		if time.Since(domain.Status.LastReconciliationLoop.Time) < (time.Minute*time.Duration(interval)) && wasSuccess {
-			sinceLastRunDuration := time.Since(domain.Status.LastReconciliationLoop.Time)
+	if original.Status.LastReconciliationLoop != nil && mode == Dynamic { //original.Spec.IpAddress == nil {
+		if time.Since(original.Status.LastReconciliationLoop.Time) < (time.Minute*time.Duration(interval)) && wasSuccess {
+			sinceLastRunDuration := time.Since(original.Status.LastReconciliationLoop.Time)
 			intervalDuration := time.Minute * time.Duration(interval)
 			requeueAfter := intervalDuration - sinceLastRunDuration
 
@@ -128,7 +126,7 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
-	currentIpAddress := domain.Status.IpAddress
+	currentIpAddress := original.Status.IpAddress
 	var newIpAddress *string
 
 	switch mode {
@@ -136,14 +134,14 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		externalIpAddress, err := r.getExternalIpAddress()
 		if err != nil {
 			logger.Error(err, "retrieving external ip failed")
-			r.Recorder.Eventf(instance, v1core.EventTypeWarning, "RetrieveExternalIpFailed", err.Error())
+			r.Recorder.Eventf(&original, v1core.EventTypeWarning, "RetrieveExternalIpFailed", err.Error())
 
 			success = false
 		} else {
 			newIpAddress = externalIpAddress
 		}
 	case Manual:
-		newIpAddress = domain.Spec.IpAddress
+		newIpAddress = original.Spec.IpAddress
 	}
 
 	// proceed to update Strato DynDNS only if a valid IP address was found
@@ -151,11 +149,11 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		// if last reconciliation loop was successful and there is no ip change skip the loop
 		if *newIpAddress == currentIpAddress && wasSuccess {
 			logger.Info("updating dyndns skipped, ip is up-to-date", "ipAddress", currentIpAddress, "mode", mode.String())
-			r.Recorder.Event(instance, v1core.EventTypeNormal, "DynDnsUpdateSkipped", "updating skipped, ip is up-to-date")
+			r.Recorder.Event(&original, v1core.EventTypeNormal, "DynDnsUpdateSkipped", "updating skipped, ip is up-to-date")
 		} else {
 			logger.Info("updating dyndns", "ipAddress", newIpAddress, "mode", mode.String())
 
-			passwordRef := domain.Spec.Password
+			passwordRef := original.Spec.Password
 			objectKey := client.ObjectKey{
 				Namespace: req.Namespace,
 				Name:      passwordRef.Name,
@@ -173,14 +171,14 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			}
 
 			password := string(secret.Data["password"])
-			if err := r.updateDns(domain.Spec.Fqdn, domain.Spec.Fqdn, password, *newIpAddress); err != nil {
+			if err := r.updateDns(original.Spec.Fqdn, original.Spec.Fqdn, password, *newIpAddress); err != nil {
 				logger.Error(err, "updating dyndns failed")
-				r.Recorder.Eventf(instance, v1core.EventTypeWarning, "DynDnsUpdateFailed", err.Error())
+				r.Recorder.Eventf(&original, v1core.EventTypeWarning, "DynDnsUpdateFailed", err.Error())
 
 				success = false
 			} else {
 				logger.Info("updating dyndns completed")
-				r.Recorder.Eventf(instance, v1core.EventTypeNormal, "DynDnsUpdateCompleted", "updating dyndns completed")
+				r.Recorder.Eventf(&original, v1core.EventTypeNormal, "DynDnsUpdateCompleted", "updating dyndns completed")
 
 				success = true
 			}
@@ -190,16 +188,16 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// update the status of the CR no matter what, but assign a new IP address in the status
 	// only when Strato DynDNS update was successful
 	if success {
-		domainCopy.Status.IpAddress = *newIpAddress
+		desired.Status.IpAddress = *newIpAddress
 	}
 
-	domainCopy.Status.LastReconciliationLoop = &v1meta.Time{Time: time.Now()}
-	domainCopy.Status.LastReconciliationResult = &success
-	domainCopy.Status.Enabled = domain.Spec.Enabled
-	domainCopy.Status.Mode = mode.String()
+	desired.Status.LastReconciliationLoop = &v1meta.Time{Time: time.Now()}
+	desired.Status.LastReconciliationResult = &success
+	desired.Status.Enabled = original.Spec.Enabled
+	desired.Status.Mode = mode.String()
 
 	// update the status of the CR
-	if err := r.Status().Update(ctx, &domainCopy); err != nil {
+	if err := r.Status().Update(ctx, &desired); err != nil {
 		logger.Error(err, "updating status failed") //
 
 		requeueAfterUpdateStatusFailure := time.Now().Add(time.Second * time.Duration(15))

@@ -45,7 +45,7 @@ helm install strato-dyndns config/helm/
 
 4. Install Instances of Custom Resources:
 
-Encode your STRATO DynDNS password for your domain or your STRATO DynDNS master password:
+Encode your STRATO DynDNS password for your original or your STRATO DynDNS master password:
 
 ```sh
 
@@ -65,7 +65,7 @@ data:
   password: cGFzc3dvcmQ=
 ```
 
-Create a Domain pointing to the FQDN of your domain registered with STRATO and bind it with the Secret containing the password for this DynDNS account:
+Create a Domain pointing to the FQDN of your original registered with STRATO and bind it with the Secret containing the password for this DynDNS account:
 
 ```
 apiVersion: dyndns.contrib.strato.com/v1alpha1
