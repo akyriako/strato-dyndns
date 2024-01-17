@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: akyriako78/strato-dyndns
-  newTag: b707a5c
+  newTag: bfff127

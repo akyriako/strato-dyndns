@@ -24,6 +24,9 @@ import (
 	"io/ioutil"
 	v1core "k8s.io/api/core/v1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"k8s.io/client-go/tools/record"
 	"net"
@@ -44,6 +47,26 @@ const (
 	externalIpRawUrl         string = "https://myexternalip.com/raw"
 	stratoUpdateDnsUrl       string = "https://%s:%s@dyndns.strato.com/nic/update?hostname=%s&myip=%s"
 	defaultIntervalInMinutes int32  = 5
+)
+
+var (
+	eventFilters = builder.WithPredicates(predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			// We only need to check generation changes here, because it is only
+			// updated on spec changes. On the other hand RevisionVersion
+			// changes also on status changes. We want to omit reconciliation
+			// for status updates.
+			return e.ObjectOld.GetGeneration() != e.ObjectNew.GetGeneration()
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			// DeleteStateUnknown evaluates to false only if the object
+			// has been confirmed as deleted by the api server.
+			return !e.DeleteStateUnknown
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return true
+		},
+	})
 )
 
 // DomainReconciler reconciles a Domain object
@@ -221,7 +244,7 @@ func (r *DomainReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 // SetupWithManager sets up the controller with the Manager.
 func (r *DomainReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&dyndnsv1alpha1.Domain{}).
+		For(&dyndnsv1alpha1.Domain{}, eventFilters).
 		Complete(r)
 }
 
